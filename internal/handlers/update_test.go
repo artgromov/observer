@@ -162,11 +162,11 @@ func TestUpdateHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			resp, data := testRequest(t, ts, test.method, test.url)
-
 			assert.Equal(t, test.want.code, resp.StatusCode)
 			if test.want.response != "" {
 				assert.JSONEq(t, test.want.response, data)
 			}
+			resp.Body.Close() // lolwut? fix statictest
 		})
 	}
 }
