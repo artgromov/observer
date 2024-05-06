@@ -13,6 +13,7 @@
 
 # Binaries
 metricstest
+statictest
 cmd/agent/main
 cmd/agent/agent
 cmd/server/main

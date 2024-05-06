@@ -118,17 +118,19 @@ func (cl *RuntimeCollector) Report() {
 				logger.Printf("RuntimeCollector report iteration started")
 				for metricName, metricValue := range cl.gaugeMap {
 					url := fmt.Sprintf("%s/update/gauge/%s/%f", cl.ServerEndpoint, metricName, metricValue)
-					_, err := http.Post(url, "text/plain", nil)
+					resp, err := http.Post(url, "text/plain", nil)
 					if err != nil {
 						logger.Printf("failed to push %s", url)
 					}
+					defer resp.Body.Close()
 				}
 				for metricName, metricValue := range cl.counterMap {
 					url := fmt.Sprintf("%s/update/counter/%s/%d", cl.ServerEndpoint, metricName, metricValue)
-					_, err := http.Post(url, "text/plain", nil)
+					resp, err := http.Post(url, "text/plain", nil)
 					if err != nil {
 						logger.Printf("failed to push %s", url)
 					}
+					defer resp.Body.Close()
 				}
 
 				logger.Printf("RuntimeCollector report iteration finished")

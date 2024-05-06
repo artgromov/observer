@@ -16,6 +16,10 @@ run-agent:
 test-my:
 	go test -v ./...
 
+.PHONY: test-static
+test-static:
+	go vet -vettool=./statictest ./...
+
 .PHONY: test-iter1
 test-iter1: build
 	./metricstest -test.v -test.run=^TestIteration1$$ \
@@ -28,7 +32,7 @@ test-iter2: build
 		-agent-binary-path=cmd/agent/agent
 
 .PHONY: test
-test: test-my test-iter1 test-iter2
+test: test-my test-static test-iter1 test-iter2
 
 
 .PHONY: clean
