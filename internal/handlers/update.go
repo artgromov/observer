@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
-	storage "github.com/artgromov/observer/internal/storage"
+	"github.com/artgromov/observer/internal/storage"
+	"github.com/go-chi/chi/v5"
 )
 
 type UpdateMetricsHandler struct {
@@ -20,23 +19,11 @@ func (mh *UpdateMetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	path := r.URL.Path
-	if !strings.HasPrefix(path, "/update/") {
-		panic(fmt.Errorf("unexpected URL path prefix: %s", path))
-	}
+	metricType := chi.URLParam(r, "metric_type")
+	metricName := chi.URLParam(r, "metric_name")
+	metricValueString := chi.URLParam(r, "metric_value")
 
-	path, _ = strings.CutPrefix(path, "/update/")
-	pathComponents := strings.Split(path, "/")
-	logger.Printf("got URL pathComponents %s, len %d", &pathComponents, len(pathComponents))
-
-	if len(pathComponents) != 3 {
-		http.Error(w, "", http.StatusNotFound)
-		return
-	}
-
-	metricType := pathComponents[0]
-	metricName := pathComponents[1]
-	metricStringValue := pathComponents[2]
+	logger.Printf("updating metricType: %s, metricName: %s, metricValue: %s", metricType, metricName, metricValueString)
 
 	if metricName == "" {
 		http.Error(w, "invalid URL, metric name must be specified", http.StatusNotFound)
@@ -48,7 +35,7 @@ func (mh *UpdateMetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	switch metricType {
 	case "gauge":
-		metricValue, err := strconv.ParseFloat(metricStringValue, 64)
+		metricValue, err := strconv.ParseFloat(metricValueString, 64)
 		if err != nil {
 			http.Error(w, "invalid metric value, not float64", http.StatusBadRequest)
 			return
@@ -59,7 +46,7 @@ func (mh *UpdateMetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 	case "counter":
-		metricValue, err := strconv.ParseInt(metricStringValue, 10, 64)
+		metricValue, err := strconv.ParseInt(metricValueString, 10, 64)
 		if err != nil {
 			http.Error(w, "invalid metric value, not int64", http.StatusBadRequest)
 			return

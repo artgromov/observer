@@ -1,4 +1,4 @@
-package handlers
+package handlers_test
 
 import (
 	"io"
@@ -6,10 +6,25 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	storage "github.com/artgromov/observer/internal/storage"
+	"github.com/artgromov/observer/internal/server"
+	"github.com/artgromov/observer/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, nil)
+	require.NoError(t, err)
+
+	resp, err := ts.Client().Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(respBody)
+}
 
 func TestUpdateHandler(t *testing.T) {
 	type want struct {
@@ -144,23 +159,16 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 	}
-	ms := storage.NewMemStorage()
-
-	umh := UpdateMetricsHandler{Storage: ms}
+	ts := httptest.NewServer(server.MetricsRouter(storage.NewMemStorage()))
+	defer ts.Close()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(test.method, test.url, nil)
-			w := httptest.NewRecorder()
-			umh.ServeHTTP(w, request)
+			resp, respBody := testRequest(t, ts, test.method, test.url)
 
-			res := w.Result()
-			assert.Equal(t, test.want.code, res.StatusCode)
+			assert.Equal(t, test.want.code, resp.StatusCode)
 			if test.want.response != "" {
-				defer res.Body.Close()
-				resBody, err := io.ReadAll(res.Body)
-				require.NoError(t, err)
-				assert.JSONEq(t, test.want.response, string(resBody))
+				assert.JSONEq(t, test.want.response, respBody)
 			}
 		})
 	}

@@ -3,21 +3,16 @@ package main
 import (
 	"net/http"
 
-	handlers "github.com/artgromov/observer/internal/handlers"
-	storage "github.com/artgromov/observer/internal/storage"
+	"github.com/artgromov/observer/internal/server"
+	"github.com/artgromov/observer/internal/storage"
 )
 
 func main() {
 	ms := storage.NewMemStorage()
 
-	umh := handlers.UpdateMetricsHandler{Storage: ms}
-	gmh := handlers.GetMetricsHandler{Storage: ms}
+	r := server.MetricsRouter(ms)
 
-	mux := http.NewServeMux()
-	mux.Handle(`/update/`, &umh)
-	mux.Handle(`/get/`, &gmh)
-
-	err := http.ListenAndServe("localhost:8080", mux)
+	err := http.ListenAndServe("localhost:8080", r)
 	if err != nil {
 		panic(err)
 	}

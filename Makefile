@@ -21,12 +21,12 @@ test-static:
 	go vet -vettool=./statictest ./...
 
 .PHONY: test-iter1
-test-iter1: build
+test-iter1: clean build
 	./metricstest -test.v -test.run=^TestIteration1$$ \
 		-binary-path=cmd/server/server
 
 .PHONY: test-iter2
-test-iter2: build
+test-iter2: clean build
 	./metricstest -test.v -test.run=^TestIteration2[AB]*$$ \
 		-source-path=. \
 		-agent-binary-path=cmd/agent/agent

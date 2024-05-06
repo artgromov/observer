@@ -1,5 +1,10 @@
 package storage
 
+import (
+	"fmt"
+	"sort"
+)
+
 type MemStorage struct {
 	gaugeMap   map[string]float64
 	counterMap map[string]int64
@@ -12,8 +17,12 @@ func NewMemStorage() *MemStorage {
 	return s
 }
 
-func (s *MemStorage) GetGaugeMap() map[string]float64 {
-	return s.gaugeMap
+func (s *MemStorage) GetGauge(name string) (float64, error) {
+	value, ok := s.gaugeMap[name]
+	if ok {
+		return value, nil
+	}
+	return 0, fmt.Errorf("gauge \"%s\" not found", name)
 }
 
 func (s *MemStorage) UpdateGauge(name string, value float64) error {
@@ -21,8 +30,12 @@ func (s *MemStorage) UpdateGauge(name string, value float64) error {
 	return nil
 }
 
-func (s *MemStorage) GetCounterMap() map[string]int64 {
-	return s.counterMap
+func (s *MemStorage) GetCounter(name string) (int64, error) {
+	value, ok := s.counterMap[name]
+	if ok {
+		return value, nil
+	}
+	return 0, fmt.Errorf("counter \"%s\" not found", name)
 }
 
 func (s *MemStorage) UpdateCounter(name string, value int64) error {
@@ -33,4 +46,32 @@ func (s *MemStorage) UpdateCounter(name string, value int64) error {
 		s.counterMap[name] = value
 	}
 	return nil
+}
+
+func (s *MemStorage) Dump() []string {
+	var result []string
+
+	gaugeKeys := make([]string, 0)
+	for k := range s.gaugeMap {
+		gaugeKeys = append(gaugeKeys, k)
+	}
+	sort.Strings(gaugeKeys)
+
+	for _, k := range gaugeKeys {
+		v := s.gaugeMap[k]
+		result = append(result, fmt.Sprintf("gauge %s %f", k, v))
+	}
+
+	counterKeys := make([]string, 0)
+	for k := range s.counterMap {
+		counterKeys = append(counterKeys, k)
+	}
+	sort.Strings(counterKeys)
+
+	for _, k := range counterKeys {
+		v := s.counterMap[k]
+		result = append(result, fmt.Sprintf("counter %s %d", k, v))
+	}
+	result = append(result, "")
+	return result
 }
