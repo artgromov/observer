@@ -17,10 +17,10 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.
 	require.NoError(t, err)
 	resp, err := ts.Client().Do(req)
 	require.NoError(t, err)
-	respBody, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	return resp, string(respBody)
+	return resp, string(data)
 }
 
 func TestUpdateHandler(t *testing.T) {
@@ -161,11 +161,11 @@ func TestUpdateHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			resp, respBody := testRequest(t, ts, test.method, test.url)
+			resp, data := testRequest(t, ts, test.method, test.url)
 
 			assert.Equal(t, test.want.code, resp.StatusCode)
 			if test.want.response != "" {
-				assert.JSONEq(t, test.want.response, respBody)
+				assert.JSONEq(t, test.want.response, data)
 			}
 		})
 	}

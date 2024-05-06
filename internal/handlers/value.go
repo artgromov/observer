@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/artgromov/observer/internal/storage"
@@ -34,14 +35,14 @@ func (mh *ValueMetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			http.Error(w, fmt.Sprintf("gauge metric with name \"%s\" not found", metricName), http.StatusNotFound)
 			return
 		}
-		metricValueString = fmt.Sprintf("%f", metricValue)
+		metricValueString = strconv.FormatFloat(metricValue, 'f', -1, 64)
 	case "counter":
 		metricValue, err := mh.Storage.GetCounter(metricName)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("counter metric with name \"%s\" not found", metricName), http.StatusNotFound)
 			return
 		}
-		metricValueString = fmt.Sprintf("%d", metricValue)
+		metricValueString = strconv.FormatInt(metricValue, 10)
 	default:
 		http.Error(w, "invalid metric type, only gauge or counter are supported", http.StatusBadRequest)
 		return

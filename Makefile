@@ -6,11 +6,13 @@ cmd/agent/agent:
 
 build: cmd/server/server cmd/agent/agent
 
+
 run-server:
 	go run cmd/server/main.go
 
 run-agent:
 	go run cmd/agent/main.go
+
 
 .PHONY: test-my
 test-my:
@@ -31,8 +33,16 @@ test-iter2: clean build
 		-source-path=. \
 		-agent-binary-path=cmd/agent/agent
 
+.PHONY: test-iter3
+test-iter3: clean build
+	./metricstest -test.v -test.run=^TestIteration3[AB]*$ \
+		-source-path=. \
+		-agent-binary-path=cmd/agent/agent \
+		-binary-path=cmd/server/server
+
+
 .PHONY: test
-test: test-my test-static test-iter1 test-iter2
+test: test-my test-static test-iter1 test-iter2 test-iter3
 
 
 .PHONY: clean
