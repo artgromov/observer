@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -123,6 +124,10 @@ func (cl *RuntimeCollector) Report() {
 						logger.Printf("failed to push %s", url)
 					}
 					defer resp.Body.Close()
+					_, err = io.Copy(io.Discard, resp.Body)
+					if err != nil {
+						logger.Printf("failed to read body %s", url)
+					}
 				}
 				for metricName, metricValue := range cl.counterMap {
 					url := fmt.Sprintf("%s/update/counter/%s/%d", cl.ServerEndpoint, metricName, metricValue)
@@ -131,6 +136,10 @@ func (cl *RuntimeCollector) Report() {
 						logger.Printf("failed to push %s", url)
 					}
 					defer resp.Body.Close()
+					_, err = io.Copy(io.Discard, resp.Body)
+					if err != nil {
+						logger.Printf("failed to read body %s", url)
+					}
 				}
 
 				logger.Printf("RuntimeCollector report iteration finished")
