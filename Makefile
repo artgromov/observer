@@ -40,9 +40,17 @@ test-iter3: clean build
 		-agent-binary-path=cmd/agent/agent \
 		-binary-path=cmd/server/server
 
+.PHONY: test-iter4
+test-iter4: clean build
+	./metricstest -test.v -test.run=^TestIteration4$$ \
+            -agent-binary-path=cmd/agent/agent \
+            -binary-path=cmd/server/server \
+            -server-port=8080 \
+            -source-path=.
+
 
 .PHONY: test
-test: test-my test-static test-iter1 test-iter2 test-iter3
+test: test-my test-static test-iter1 test-iter2 test-iter3 test-iter4
 
 
 .PHONY: clean
