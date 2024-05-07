@@ -1,6 +1,8 @@
 package configs
 
 import (
+	"os"
+
 	flag "github.com/spf13/pflag"
 )
 
@@ -16,5 +18,9 @@ func NewServerConfig() *ServerConfig {
 
 func (c *ServerConfig) Parse() error {
 	flag.Parse()
+	value, exists := os.LookupEnv("ADDRESS")
+	if exists {
+		c.Addr = value
+	}
 	return validateAddrString(c.Addr)
 }

@@ -1,6 +1,9 @@
 package configs
 
 import (
+	"os"
+	"strconv"
+
 	flag "github.com/spf13/pflag"
 )
 
@@ -20,5 +23,25 @@ func NewAgentConfig() *AgentConfig {
 
 func (c *AgentConfig) Parse() error {
 	flag.Parse()
+	value, exists := os.LookupEnv("ADDRESS")
+	if exists {
+		c.Addr = value
+	}
+	value, exists = os.LookupEnv("REPORT_INTERVAL")
+	if exists {
+		value, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		c.ReportInterval = value
+	}
+	value, exists = os.LookupEnv("POLL_INTERVAL")
+	if exists {
+		value, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		c.PollInterval = value
+	}
 	return validateAddrString(c.Addr)
 }
