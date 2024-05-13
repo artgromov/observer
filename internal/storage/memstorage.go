@@ -3,11 +3,13 @@ package storage
 import (
 	"fmt"
 	"sort"
+	"sync"
 )
 
 type MemStorage struct {
 	gaugeMap   map[string]float64
 	counterMap map[string]int64
+	lock       sync.Mutex
 }
 
 func NewMemStorage() *MemStorage {
@@ -18,6 +20,8 @@ func NewMemStorage() *MemStorage {
 }
 
 func (s *MemStorage) GetGauge(name string) (float64, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	value, ok := s.gaugeMap[name]
 	if ok {
 		return value, nil
@@ -26,11 +30,15 @@ func (s *MemStorage) GetGauge(name string) (float64, error) {
 }
 
 func (s *MemStorage) UpdateGauge(name string, value float64) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.gaugeMap[name] = value
 	return nil
 }
 
 func (s *MemStorage) GetCounter(name string) (int64, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	value, ok := s.counterMap[name]
 	if ok {
 		return value, nil
@@ -39,6 +47,8 @@ func (s *MemStorage) GetCounter(name string) (int64, error) {
 }
 
 func (s *MemStorage) UpdateCounter(name string, value int64) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	_, ok := s.counterMap[name]
 	if ok {
 		s.counterMap[name] += value
@@ -49,6 +59,8 @@ func (s *MemStorage) UpdateCounter(name string, value int64) error {
 }
 
 func (s *MemStorage) Dump() []string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	var result []string
 
 	gaugeKeys := make([]string, 0)

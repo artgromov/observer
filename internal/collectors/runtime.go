@@ -136,6 +136,7 @@ func (cl *RuntimeCollector) Report() {
 						logger.Printf("failed to push %s", url)
 					}
 					defer resp.Body.Close()
+					cl.counterMap[metricName] = 0 // resetting counter after successful push
 					_, err = io.Copy(io.Discard, resp.Body)
 					if err != nil {
 						logger.Printf("failed to read body %s", url)
