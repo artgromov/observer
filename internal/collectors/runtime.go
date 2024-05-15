@@ -1,17 +1,16 @@
 package collectors
 
 import (
-	"fmt"
-	"io"
 	"math/rand"
-	"net/http"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/artgromov/observer/internal/client"
 )
 
 type RuntimeCollector struct {
-	ServerEndpoint string
+	client *client.Client
 
 	gaugeMap   map[string]float64
 	counterMap map[string]int64
@@ -23,9 +22,9 @@ type RuntimeCollector struct {
 	reportStop   chan bool
 }
 
-func NewRuntimeCollector(ServerEndpoint string, PollInterval time.Duration, ReportInterval time.Duration) *RuntimeCollector {
+func NewRuntimeCollector(Client *client.Client, PollInterval time.Duration, ReportInterval time.Duration) *RuntimeCollector {
 	rc := new(RuntimeCollector)
-	rc.ServerEndpoint = ServerEndpoint
+	rc.client = Client
 	rc.gaugeMap = make(map[string]float64)
 	rc.counterMap = make(map[string]int64)
 	rc.pollTicker = *time.NewTicker(PollInterval)
@@ -118,29 +117,17 @@ func (cl *RuntimeCollector) Report() {
 				defer cl.lock.Unlock()
 				logger.Printf("RuntimeCollector report iteration started")
 				for metricName, metricValue := range cl.gaugeMap {
-					url := fmt.Sprintf("%s/update/gauge/%s/%f", cl.ServerEndpoint, metricName, metricValue)
-					resp, err := http.Post(url, "text/plain", nil)
+					err := cl.client.PushGauge(metricName, metricValue)
 					if err != nil {
-						logger.Printf("failed to push %s", url)
-					}
-					defer resp.Body.Close()
-					_, err = io.Copy(io.Discard, resp.Body)
-					if err != nil {
-						logger.Printf("failed to read body %s", url)
+						continue
 					}
 				}
 				for metricName, metricValue := range cl.counterMap {
-					url := fmt.Sprintf("%s/update/counter/%s/%d", cl.ServerEndpoint, metricName, metricValue)
-					resp, err := http.Post(url, "text/plain", nil)
+					err := cl.client.PushCounter(metricName, metricValue)
 					if err != nil {
-						logger.Printf("failed to push %s", url)
+						continue
 					}
-					defer resp.Body.Close()
 					cl.counterMap[metricName] = 0 // resetting counter after successful push
-					_, err = io.Copy(io.Discard, resp.Body)
-					if err != nil {
-						logger.Printf("failed to read body %s", url)
-					}
 				}
 
 				logger.Printf("RuntimeCollector report iteration finished")

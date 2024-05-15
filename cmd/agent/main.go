@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/artgromov/observer/internal/client"
 	"github.com/artgromov/observer/internal/collectors"
 	"github.com/artgromov/observer/internal/configs"
 )
@@ -25,7 +26,9 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	rcl := collectors.NewRuntimeCollector(fmt.Sprintf("http://%s", cfg.Addr), time.Duration(cfg.PollInterval)*time.Second, time.Duration(cfg.ReportInterval)*time.Second)
+	cl := client.NewClient(fmt.Sprintf("http://%s", cfg.Addr))
+
+	rcl := collectors.NewRuntimeCollector(cl, time.Duration(cfg.PollInterval)*time.Second, time.Duration(cfg.ReportInterval)*time.Second)
 
 	rcl.Start()
 	<-sigs
