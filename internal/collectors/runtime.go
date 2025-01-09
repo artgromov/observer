@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/artgromov/observer/internal/client"
+	"github.com/artgromov/observer/internal/logger"
+	"go.uber.org/zap"
 )
 
 type RuntimeCollector struct {
 	client *client.Client
+	l      *zap.Logger
 
 	gaugeMap   map[string]float64
 	counterMap map[string]int64
@@ -25,6 +28,7 @@ type RuntimeCollector struct {
 func NewRuntimeCollector(Client *client.Client, PollInterval time.Duration, ReportInterval time.Duration) *RuntimeCollector {
 	rc := new(RuntimeCollector)
 	rc.client = Client
+	rc.l = logger.Get()
 	rc.gaugeMap = make(map[string]float64)
 	rc.counterMap = make(map[string]int64)
 	rc.pollTicker = *time.NewTicker(PollInterval)
@@ -34,107 +38,107 @@ func NewRuntimeCollector(Client *client.Client, PollInterval time.Duration, Repo
 	return rc
 }
 
-func (cl *RuntimeCollector) Start() {
-	logger.Printf("RuntimeCollector starting")
-	go cl.Poll()
-	go cl.Report()
-	logger.Printf("RuntimeCollector started")
+func (rc *RuntimeCollector) Start() {
+	rc.l.Info("RuntimeCollector starting")
+	go rc.Poll()
+	go rc.Report()
+	rc.l.Info("RuntimeCollector started")
 }
 
-func (cl *RuntimeCollector) Stop() {
-	logger.Printf("RuntimeCollector stopping")
-	cl.pollTicker.Stop()
-	cl.reportTicker.Stop()
-	cl.pollStop <- true
-	cl.reportStop <- true
-	<-cl.pollStop
-	<-cl.reportStop
-	logger.Printf("RuntimeCollector stopped")
+func (rc *RuntimeCollector) Stop() {
+	rc.l.Info("RuntimeCollector stopping")
+	rc.pollTicker.Stop()
+	rc.reportTicker.Stop()
+	rc.pollStop <- true
+	rc.reportStop <- true
+	<-rc.pollStop
+	<-rc.reportStop
+	rc.l.Info("RuntimeCollector stopped")
 }
 
-func (cl *RuntimeCollector) Poll() {
-	logger.Printf("RuntimeCollector poll goroutine started")
-	defer func() { cl.pollStop <- true }()
+func (rc *RuntimeCollector) Poll() {
+	rc.l.Info("RuntimeCollector poll goroutine started")
+	defer func() { rc.pollStop <- true }()
 	for {
 		select {
-		case <-cl.pollTicker.C:
+		case <-rc.pollTicker.C:
 			func() {
-				cl.lock.Lock()
-				defer cl.lock.Unlock()
-				logger.Printf("RuntimeCollector poll iteration started")
+				rc.lock.Lock()
+				defer rc.lock.Unlock()
+				rc.l.Info("RuntimeCollector poll iteration started")
 
 				var memStats runtime.MemStats
 				runtime.ReadMemStats(&memStats)
-				cl.gaugeMap["Alloc"] = float64(memStats.Alloc)
-				cl.gaugeMap["BuckHashSys"] = float64(memStats.BuckHashSys)
-				cl.gaugeMap["Frees"] = float64(memStats.Frees)
-				cl.gaugeMap["GCCPUFraction"] = float64(memStats.GCCPUFraction)
-				cl.gaugeMap["GCSys"] = float64(memStats.GCSys)
-				cl.gaugeMap["HeapAlloc"] = float64(memStats.HeapAlloc)
-				cl.gaugeMap["HeapIdle"] = float64(memStats.HeapIdle)
-				cl.gaugeMap["HeapInuse"] = float64(memStats.HeapInuse)
-				cl.gaugeMap["HeapObjects"] = float64(memStats.HeapObjects)
-				cl.gaugeMap["HeapReleased"] = float64(memStats.HeapReleased)
-				cl.gaugeMap["HeapSys"] = float64(memStats.HeapSys)
-				cl.gaugeMap["LastGC"] = float64(memStats.LastGC)
-				cl.gaugeMap["Lookups"] = float64(memStats.Lookups)
-				cl.gaugeMap["MCacheInuse"] = float64(memStats.MCacheInuse)
-				cl.gaugeMap["MCacheSys"] = float64(memStats.MCacheSys)
-				cl.gaugeMap["MSpanInuse"] = float64(memStats.MSpanInuse)
-				cl.gaugeMap["MSpanSys"] = float64(memStats.MSpanSys)
-				cl.gaugeMap["Mallocs"] = float64(memStats.Mallocs)
-				cl.gaugeMap["NextGC"] = float64(memStats.NextGC)
-				cl.gaugeMap["NumForcedGC"] = float64(memStats.NumForcedGC)
-				cl.gaugeMap["NumGC"] = float64(memStats.NumGC)
-				cl.gaugeMap["OtherSys"] = float64(memStats.OtherSys)
-				cl.gaugeMap["PauseTotalNs"] = float64(memStats.PauseTotalNs)
-				cl.gaugeMap["StackInuse"] = float64(memStats.StackInuse)
-				cl.gaugeMap["StackSys"] = float64(memStats.StackSys)
-				cl.gaugeMap["Sys"] = float64(memStats.Sys)
-				cl.gaugeMap["TotalAlloc"] = float64(memStats.TotalAlloc)
-				cl.gaugeMap["RandomValue"] = rand.Float64()
+				rc.gaugeMap["Alloc"] = float64(memStats.Alloc)
+				rc.gaugeMap["BuckHashSys"] = float64(memStats.BuckHashSys)
+				rc.gaugeMap["Frees"] = float64(memStats.Frees)
+				rc.gaugeMap["GCCPUFraction"] = float64(memStats.GCCPUFraction)
+				rc.gaugeMap["GCSys"] = float64(memStats.GCSys)
+				rc.gaugeMap["HeapAlloc"] = float64(memStats.HeapAlloc)
+				rc.gaugeMap["HeapIdle"] = float64(memStats.HeapIdle)
+				rc.gaugeMap["HeapInuse"] = float64(memStats.HeapInuse)
+				rc.gaugeMap["HeapObjects"] = float64(memStats.HeapObjects)
+				rc.gaugeMap["HeapReleased"] = float64(memStats.HeapReleased)
+				rc.gaugeMap["HeapSys"] = float64(memStats.HeapSys)
+				rc.gaugeMap["LastGC"] = float64(memStats.LastGC)
+				rc.gaugeMap["Lookups"] = float64(memStats.Lookups)
+				rc.gaugeMap["MCacheInuse"] = float64(memStats.MCacheInuse)
+				rc.gaugeMap["MCacheSys"] = float64(memStats.MCacheSys)
+				rc.gaugeMap["MSpanInuse"] = float64(memStats.MSpanInuse)
+				rc.gaugeMap["MSpanSys"] = float64(memStats.MSpanSys)
+				rc.gaugeMap["Mallocs"] = float64(memStats.Mallocs)
+				rc.gaugeMap["NextGC"] = float64(memStats.NextGC)
+				rc.gaugeMap["NumForcedGC"] = float64(memStats.NumForcedGC)
+				rc.gaugeMap["NumGC"] = float64(memStats.NumGC)
+				rc.gaugeMap["OtherSys"] = float64(memStats.OtherSys)
+				rc.gaugeMap["PauseTotalNs"] = float64(memStats.PauseTotalNs)
+				rc.gaugeMap["StackInuse"] = float64(memStats.StackInuse)
+				rc.gaugeMap["StackSys"] = float64(memStats.StackSys)
+				rc.gaugeMap["Sys"] = float64(memStats.Sys)
+				rc.gaugeMap["TotalAlloc"] = float64(memStats.TotalAlloc)
+				rc.gaugeMap["RandomValue"] = rand.Float64()
 
-				cl.counterMap["PollCount"] += 1
+				rc.counterMap["PollCount"] += 1
 
-				logger.Printf("RuntimeCollector poll iteration finished")
+				rc.l.Info("RuntimeCollector poll iteration finished")
 			}()
 
-		case <-cl.pollStop:
-			logger.Printf("RuntimeCollector poll goroutine exiting by signal")
+		case <-rc.pollStop:
+			rc.l.Info("RuntimeCollector poll goroutine exiting by signal")
 			return
 		}
 	}
 }
 
-func (cl *RuntimeCollector) Report() {
-	logger.Printf("RuntimeCollector report goroutine started")
-	defer func() { cl.reportStop <- true }()
+func (rc *RuntimeCollector) Report() {
+	rc.l.Info("RuntimeCollector report goroutine started")
+	defer func() { rc.reportStop <- true }()
 	for {
 		select {
-		case <-cl.reportTicker.C:
+		case <-rc.reportTicker.C:
 			func() {
-				cl.lock.Lock()
-				defer cl.lock.Unlock()
-				logger.Printf("RuntimeCollector report iteration started")
-				for metricName, metricValue := range cl.gaugeMap {
-					err := cl.client.PushGauge(metricName, metricValue)
+				rc.lock.Lock()
+				defer rc.lock.Unlock()
+				rc.l.Info("RuntimeCollector report iteration started")
+				for metricName, metricValue := range rc.gaugeMap {
+					err := rc.client.PushGauge(metricName, metricValue)
 					if err != nil {
 						continue
 					}
 				}
-				for metricName, metricValue := range cl.counterMap {
-					err := cl.client.PushCounter(metricName, metricValue)
+				for metricName, metricValue := range rc.counterMap {
+					err := rc.client.PushCounter(metricName, metricValue)
 					if err != nil {
 						continue
 					}
-					cl.counterMap[metricName] = 0 // resetting counter after successful push
+					rc.counterMap[metricName] = 0 // resetting counter after successful push
 				}
 
-				logger.Printf("RuntimeCollector report iteration finished")
+				rc.l.Info("RuntimeCollector report iteration finished")
 			}()
 
-		case <-cl.reportStop:
-			logger.Printf("RuntimeCollector report goroutine exiting by signal")
+		case <-rc.reportStop:
+			rc.l.Info("RuntimeCollector report goroutine exiting by signal")
 			return
 		}
 	}

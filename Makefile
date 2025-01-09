@@ -14,13 +14,13 @@ run-agent:
 	go run cmd/agent/main.go
 
 
-.PHONY: test-my
-test-my:
-	go test -v ./...
-
 .PHONY: test-static
 test-static:
 	go vet -vettool=./statictest ./...
+
+.PHONY: test-my
+test-my:
+	go test -v ./...
 
 .PHONY: test-iter1
 test-iter1: clean build
@@ -43,22 +43,30 @@ test-iter3: clean build
 .PHONY: test-iter4
 test-iter4: clean build
 	./metricstest -test.v -test.run=^TestIteration4$$ \
-			-agent-binary-path=cmd/agent/agent \
-			-binary-path=cmd/server/server \
-			-server-port=8080 \
-			-source-path=.
+		-agent-binary-path=cmd/agent/agent \
+		-binary-path=cmd/server/server \
+		-server-port=8080 \
+		-source-path=.
 
-target test-iter5 : export ADDRESS = "localhost:8080"
 .PHONY: test-iter5
 test-iter5: clean build
 	./metricstest -test.v -test.run=^TestIteration5$$ \
-			-agent-binary-path=cmd/agent/agent \
-			-binary-path=cmd/server/server \
-			-server-port=8080 \
-			-source-path=.
+		-agent-binary-path=cmd/agent/agent \
+		-binary-path=cmd/server/server \
+		-server-port=8080 \
+		-source-path=.
+
+.PHONY: test-iter6
+test-iter6: clean build
+	./metricstest -test.v -test.run=^TestIteration6$ \
+		-agent-binary-path=cmd/agent/agent \
+		-binary-path=cmd/server/server \
+		-server-port=8080 \
+		-source-path=.
+
 
 .PHONY: test
-test: test-my test-static test-iter1 test-iter2 test-iter3 test-iter4 test-iter5
+test: test-static test-my test-iter1 test-iter2 test-iter3 test-iter4 test-iter5 test-iter6
 
 
 .PHONY: clean

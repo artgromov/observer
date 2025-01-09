@@ -5,8 +5,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/artgromov/observer/internal/logger"
 	"github.com/artgromov/observer/internal/storage"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type UpdateMetricsHandler struct {
@@ -23,7 +25,12 @@ func (mh *UpdateMetricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	metricName := chi.URLParam(r, "metric_name")
 	metricValueString := chi.URLParam(r, "metric_value")
 
-	logger.Printf("updating metricType: %s, metricName: %s, metricValue: %s", metricType, metricName, metricValueString)
+	logger.Get().Info(
+		"updating metric",
+		zap.String("metric_type", metricType),
+		zap.String("metric_name", metricName),
+		zap.String("metric_value", metricValueString),
+	)
 
 	if metricName == "" {
 		http.Error(w, "invalid URL, metric name must be specified", http.StatusNotFound)

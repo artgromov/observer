@@ -1,16 +1,15 @@
 package main
 
 import (
-	"log"
 	"net/http"
-	"os"
+	"runtime/debug"
 
 	"github.com/artgromov/observer/internal/configs"
+	"github.com/artgromov/observer/internal/logger"
 	"github.com/artgromov/observer/internal/server"
 	"github.com/artgromov/observer/internal/storage"
+	"go.uber.org/zap"
 )
-
-var logger = log.New(os.Stdout, "", 0)
 
 func main() {
 	cfg := configs.NewServerConfig()
@@ -19,11 +18,23 @@ func main() {
 		panic(err)
 	}
 
+	l := logger.Get()
+	buildInfo, ok := debug.ReadBuildInfo()
+	var gitRevision string
+	if ok {
+		for _, v := range buildInfo.Settings {
+			if v.Key == "vcs.revision" {
+				gitRevision = v.Value
+				break
+			}
+		}
+	}
+
 	ms := storage.NewMemStorage()
 
 	r := server.MetricsRouter(ms)
 
-	logger.Printf("starting server on addr: \"%s\"", cfg.Addr)
+	l.Info("starting server", zap.String("server_addr", cfg.Addr), zap.String("git_revision", gitRevision), zap.String("go_version", buildInfo.GoVersion))
 	err = http.ListenAndServe(cfg.Addr, r)
 	if err != nil {
 		panic(err)
